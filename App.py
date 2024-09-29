@@ -1,70 +1,60 @@
+import numpy as np
+import streamlit as st
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder, StandardScaler
-import pickle
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-# Load the trained model
-with open('D:/IBM Data Scientist/FinalProject/saved_models/xgb_model.pkl', 'rb') as f:
-    model = pickle.load(f)
+@st.cache_data
+def load_data():
+    data = pd.read_csv('Cleaned.csv')
+    return data
 
-# Define a function to process user input
-def process_input(user_data):
-    # Convert user data to a DataFrame
-    df = pd.DataFrame([user_data])
-    
-    # Apply LabelEncoder for categorical variables
-    label_encoder = LabelEncoder()
-    
-    # Example mapping of categorical features (this needs to be consistent with your training data)
-    df['WindGustDir'] = label_encoder.fit_transform(df['WindGustDir'])
-    df['WindDir9am'] = label_encoder.fit_transform(df['WindDir9am'])
-    df['WindDir3pm'] = label_encoder.fit_transform(df['WindDir3pm'])
-    df['RainToday'] = label_encoder.fit_transform(df['RainToday'])
-    
-    # Apply StandardScaler to numerical variables
-    scaler = StandardScaler()
-    
-    # Numerical columns that need scaling (consistent with your model's training process)
-    scaled_columns = ['MinTemp', 'MaxTemp', 'Rainfall', 'Evaporation', 'Sunshine', 'WindGustSpeed', 
-                      'WindSpeed9am', 'WindSpeed3pm', 'Humidity9am', 'Humidity3pm', 'Pressure9am', 
-                      'Cloud9am', 'Cloud3pm']
-    
-    df[scaled_columns] = scaler.fit_transform(df[scaled_columns])
-    
-    return df
+data = load_data()
 
-# Example of user input data (to be replaced by actual user input)
-user_input = {
-    'Location': 1,
-    'MinTemp': 12.5,
-    'MaxTemp': 25.3,
-    'Rainfall': 0.0,
-    'Evaporation': 5.0,
-    'Sunshine': 8.0,
-    'WindGustDir': 'N',  # Needs to be converted to numerical encoding
-    'WindGustSpeed': 40.0,
-    'WindDir9am': 'NW',  # Needs to be converted to numerical encoding
-    'WindDir3pm': 'SE',  # Needs to be converted to numerical encoding
-    'WindSpeed9am': 15.0,
-    'WindSpeed3pm': 20.0,
-    'Humidity9am': 70,
-    'Humidity3pm': 50,
-    'Pressure9am': 1015.0,
-    'Cloud9am': 4,
-    'Cloud3pm': 3,
-    'RainToday': 'No',  # Needs to be converted to numerical encoding
-    'day': 28,
-    'month': 9,
-    'year': 2024
-}
+cities = data['Location'].unique()  
 
-# Process the input data
-processed_input = process_input(user_input)
+# User selects a city from dropdown menu
+city = st.selectbox("Select a city", cities)
 
-# Make the prediction
-prediction = model.predict(processed_input)
+city_data = data[data['Location'] == city]
 
-# Output the result
-if prediction == 1:
-    print("It will rain tomorrow.")
-else:
-    print("It will not rain tomorrow.")
+city_data_by_year = city_data.groupby('year', as_index=False).sum()
+
+st.subheader(f"Rainfall over the Years in {city} ")
+fig1, ax1 = plt.subplots(figsize=(8, 6))
+ax1.plot(city_data_by_year['year'], city_data_by_year['Rainfall'], marker='o', color='blue')
+ax1.set_xlabel('Year')
+ax1.set_ylabel('Rainfall (mm)')
+ax1.set_title(f"Rainfall Trend Over the Years in {city} ")
+st.pyplot(fig1)
+
+sorted_city_data = city_data_by_year.sort_values(by='Rainfall', ascending=False)
+st.subheader(f"Years with the Highest Rainfall in {city} ")
+fig2, ax2 = plt.subplots(figsize=(8, 6))
+top_10_years = sorted_city_data.head(10)
+ax2.bar(top_10_years['year'], top_10_years['Rainfall'], color='green')
+plt.xticks(np.arange(2009, 2018, 1))
+ax2.set_xlabel('Year')
+ax2.set_ylabel('Rainfall (mm)')
+ax2.set_title(f"Top 10 Years with the Highest Rainfall in {city} ")
+st.pyplot(fig2)
+
+# Visualization 3: Histogram of Rainfall Distribution
+st.subheader(f"Histogram of Rainfall in {city} ")
+fig3, ax3 = plt.subplots(figsize=(8, 6))
+ax3.hist(city_data['Rainfall'], color='purple')  
+ax3.set_xlabel('Rainfall (mm)')
+ax3.set_ylabel('Frequency')
+ax3.set_title(f"Rainfall Distribution in {city} ")
+st.pyplot(fig3)
+
+st.subheader(f"Proportion of Rainy vs Dry Days in {city} ")
+rainy_days = city_data[city_data['Rainfall'] > 0].shape[0]
+dry_days = city_data[city_data['Rainfall'] == 0].shape[0]
+labels = ['Rainy Days', 'Dry Days']
+sizes = [rainy_days, dry_days]
+fig4, ax4 = plt.subplots(figsize=(6, 6))
+ax4.pie(sizes, labels=labels, autopct='%1.1f%%', colors=['skyblue', 'lightgrey'], startangle=90)
+ax4.axis('equal') 
+ax4.set_title(f"Proportion of Rainy vs Dry Days in {city} ")
+st.pyplot(fig4)
