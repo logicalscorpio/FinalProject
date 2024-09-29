@@ -37,15 +37,6 @@ fig2 = px.scatter(city_data, x=y_variable, y='Rainfall',
 fig2.update_layout(xaxis_title=selected_var, yaxis_title='Rainfall (mm)')
 st.plotly_chart(fig2)
 
-sorted_city_data = city_data_by_year.sort_values(by='Rainfall', ascending=False)
-top_10_years = sorted_city_data.head(10)
-
-st.subheader(f"Years with the Highest Rainfall in {city}")
-fig3 = px.bar(top_10_years, x='year', y='Rainfall', title=f"Top 10 Years with the Highest Rainfall in {city}",
-              labels={'year': 'Year', 'Rainfall': 'Rainfall (mm)'}, color='Rainfall')
-fig3.update_layout(xaxis_title='Year', yaxis_title='Rainfall (mm)', xaxis=dict(tickmode='linear'))
-st.plotly_chart(fig3)
-
 st.subheader(f"Histogram of Rainfall in {city}")
 fig4 = px.histogram(city_data, x='Rainfall', nbins=30, title=f"Rainfall Distribution in {city}",
                     labels={'Rainfall': 'Rainfall (mm)'})
